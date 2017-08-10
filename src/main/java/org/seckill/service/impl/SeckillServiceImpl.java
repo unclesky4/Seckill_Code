@@ -1,8 +1,11 @@
 package org.seckill.service.impl;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.seckill.dao.SeckillDao;
 import org.seckill.dao.SuccessKilledDao;
 import org.seckill.dto.Exposer;
@@ -126,6 +129,41 @@ public class SeckillServiceImpl implements SeckillService {
 			throw new SeckillException("seckill inner error:" + e.getMessage());
 		}
 	}
+	
+	 /**
+     * 通过调用存储过程执行秒杀操作.
+     * */
+    public SeckillExecution executeSeckillByProcudure(long seckillId, long userPhone, String md5)
+            throws SeckillException, RepeatKillException, SeckillCloseException {
+        // 首先判断md5的值
+        if(md5 == null || !md5.equals(getMD5(seckillId))) {
+            return new SeckillExecution(seckillId, SeckillStateEnum.DATA_REWRITE);
+        }
+        // 获取当前系统的时间
+        Date date = new Date();
+        Map<String, Object> params = new HashMap<String, Object>();
+        // 将要调用存储过程的参数放入到map中
+        params.put("seckillId", seckillId);
+        params.put("phone", userPhone);
+        params.put("killTime", date);
+        params.put("result", null);
+        try {
+            // 执行秒杀的逻辑
+            seckillDao.killByProcedure(params);
+            int result = MapUtils.getIntValue(params, "result", -2);
+            if(result == 1) {
+                SuccessKilled successKill = successKilledDao.
+                            queryByIdWithSeckill(seckillId, userPhone);
+                return new SeckillExecution(seckillId, SeckillStateEnum.SUCCESS, successKill);
+            } else {
+                // 当调用秒杀失败时,也返回执行的结果
+                return new SeckillExecution(seckillId, SeckillStateEnum.stateOf(result));
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(),e);
+            return new SeckillExecution(seckillId, SeckillStateEnum.INNER_ERROR);
+        }
+    }
 
 	// 生成md5值的方法
 	private String getMD5(long seckillId) {
