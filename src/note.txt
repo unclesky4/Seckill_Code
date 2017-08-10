@@ -1,0 +1,134 @@
+前提：安装配置好java，maven的环境
+Maven配置：
+1.打开 preference-->Maven-->Installations 选择已安装的Maven
+2.打开 preference-->Maven 勾上Download repository index updates on setup
+3.Window-》Show View-》Other-》Maven-》Maven Repositories
+4.Global Repositories-》central-》右健-》Update Index
+
+DgroupId=org.seckill 
+DartifactId=seckill
+第一步：升级servlet2.3到更高版本(web.xml)
+		将tomcat/webapps/examples/WEB-INF/web.xml的头部文件复制过来
+第二步：修改 maven 编译级别
+	1.在pom.xml中的builld标签中添加：
+	<plugins>  
+        <!-- define the project compile level -->  
+        <plugin>  
+            <groupId>org.apache.maven.plugins</groupId>  
+            <artifactId>maven-compiler-plugin</artifactId>  
+            <version>3.6.2</version>  
+            <configuration>  
+                <source>1.8</source>  
+                <target>1.8</target>  
+            </configuration>  
+        </plugin>  
+    </plugins>
+    
+    2.右键项目-Maven-Update Project
+    
+    3.右键项目-Properties-Java Build Path-Libraries-Add Libraries-Server runtime---添加Tomcat
+    
+第四步：在pom.xml中添加依赖
+
+---------------------------------------------------------------------------------------
+
+
+//java没有保存形参的记录： queryAll(int offset, int limit) ->queryAll(arg0, arg1)  解决办法：@Param("参数名")
+DAO层工作： 接口设计 + SQL编写
+DAO拼接等逻辑在Service层完成
+
+
+#Spring IOC功能理解:
+对象工厂
+		------->一致的访问接口
+依赖管理
+
+#业务对象依赖图：	
+SeckillService ----->SeckillDao + SuccessKilledDao ---> sqlSessionFactory ---->DataSource
+
+--------------------------------------------------------------------------------------
+#Spring-IOC注入方式和场景
+
+------XML																			
+1、Bean实现类来自第三方类库，如：DataSources等。
+2、需要命名空间配置，如：conteext,aop, mvc等。
+	
+------注解
+项目中自身开发使用的类，可以在代码中使用注解，如：@Service,  @Controller
+
+
+----java配置类
+需要通过代码控制对象创建逻辑的场景，如：自定义修改依赖库
+-----------------------------------------------------------------------------------------
+
+#本项目IOC使用：  XML配置   +    package-scan   +   Annotation注解
+
+-------------------------------------------------------------------------------------
+
+#声明式事务使用方式（3种）：
+
+ProxyFactoryBean + XML  -------->  早期使用方式2.0
+
+tx:advice + aop命名空间   --------> 一次配置永久生效
+
+注解@Transactional      -------->  注解控制   (推荐)
+
+#什么时候回滚事务：
+抛出运行期异常（RuntimeException）  --小心不当的try-catch
+
+---------------------------------------------------
+#Restful规范：
+
+GET   查询操作
+POST   添加/修改操作
+PUT     修改操作
+DELETE    删除操作
+
+
+#URL设计:
+/模块/资源/{标示}/集和1/...
+eg: /user/{uid}/friends     --> 好友列表
+	/user/{uid/}/followers   -->关注者列表
+	
+#秒杀API的URL设计：
+GET  /seckill/list	秒杀列表
+GET  /seckill/{id}/detail	详情页
+GET  /seckill/time/now		系统时间
+POST  /seckill/{id}/exposer		暴露秒杀
+POST  /seckill/{id}/{md5}/execution		执行秒杀
+
+------------------------------------------------------
+
+SpringMVC 
+#围绕Handler开发：
+
+Handler  ---->  数据Model + 页面View
+
+---------------------------------------------------
+#整合错误总结：
+
+##javax.el.PropertyNotFoundException: Property [name] not found on type java.lang.String
+解决：在jstl标签属性中的""中间不能有空格
+原： <c:forEach items="${userlist } " var="user">
+把"${userlist } "中间的空格去掉，改为：
+<c:forEach items="${userlist}" var="user">就ok了
+
+
+##Caused by: java.sql.SQLException: The server time zone value 'XXXXXXXXX' is unrecognized or 
+represents more than one time zone. You must configure either the server or JDBC driver (via the serverTimezone 
+configuration property) to use a more specifc time zone value if you want to utilize time zone support.
+原因： 在使用mysql的jdbc驱动最新版（6.0+）时，遇到数据库和系统时区差异引起的问题。
+解决：一种是降版本，这个我们知道就行了，并不推荐；还有一种是在jdbc连接的url后面加上&serverTimezone=UTC或GMT即可
+
+------------------------------------
+#优化总结：
+前端控制：暴露接口，按钮防重复
+动静态数据分离：CDN缓存，后端缓存
+事务竞争优化：减少事务锁时间(使用事务的基本原则是：只包含对DB的操作，尽可能缩短事务时间)
+
+------------------------------------
+系统部署可能用到的服务:
+CDN
+WebServer:Nginx+Jetty
+Redis
+Mysql
